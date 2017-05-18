@@ -4,7 +4,7 @@ This article continues the previous post [Boosting algorithm:
 GBM](https://medium.com/towards-data-science/boosting-algorithm-gbm-97737c63daa3).
 This time we are going to discuss XGBoost! (Finally!)
 
-### XGBoost: Extreme Gradient Boosting
+## XGBoost: Extreme Gradient Boosting
 
 XGBoost, short for “Extreme Gradient Boosting”, was introduced by Chen in 2014.
 Since its introduction, XGBoost has become one of the most popular machine
@@ -16,58 +16,79 @@ As mentioned in the previous post, GBM divides the optimization problem into two
 parts by first determining the direction of the step and then optimizing the
 step length. Different from GBM, XGBoost tries to determine the step directly by
 solving
-
-![](https://cdn-images-1.medium.com/max/800/1*QAIReONJ8r6AmHKuaVotdQ.png)
+<p align="center">
+<img src='https://cdn-images-1.medium.com/max/800/1*QAIReONJ8r6AmHKuaVotdQ.png'>
+</p>
 
 for each **x** in the data set. By doing second-order Taylor expansion of the
 loss function around the current estimate **f(m-1)(x)**, we get
-
-![](https://cdn-images-1.medium.com/max/800/1*WWInCZCh7KhQmi8nscJMYw.png)
+<p align="center">
+<img src='https://cdn-images-1.medium.com/max/800/1*WWInCZCh7KhQmi8nscJMYw.png'>
+</p>
 
 where **g_m(x)** is the gradient, same as the one in GBM, and **h_m(x)** is the
 Hessian (second order derivative) at the current estimate:
-
-![](https://cdn-images-1.medium.com/max/800/1*qYj8oeFqvmAc5X8a66C7uQ.png)
+<p align="center">
+<img src='https://cdn-images-1.medium.com/max/800/1*qYj8oeFqvmAc5X8a66C7uQ.png'>
+</p>
 
 Then the loss function can be rewritten as
+<p align="center">
+<img src='https://cdn-images-1.medium.com/max/800/1*QL-uJ9zBKrT19ugCYrbO4A.png'>
+</p>
 
 Letting **G_jm** represents the sum of gradient in region **j** and **H_jm**
 equals to the sum of hessian in region **j**, the equation can be rewritten as
-
-![](https://cdn-images-1.medium.com/max/800/1*RE57Lvsbure_KICFBifvtA.png)
+<p align="center">
+<img src='https://cdn-images-1.medium.com/max/800/1*RE57Lvsbure_KICFBifvtA.png'>
+</p>
 
 With the fixed learned structure, for each region, it is straightforward to
 determine the optimal weight :
-
-![](https://cdn-images-1.medium.com/max/800/1*qGF58wI3LzNYEzU9U2VEdw.png)
+<p align="center">
+<img src='https://cdn-images-1.medium.com/max/800/1*qGF58wI3LzNYEzU9U2VEdw.png'>
+</p>
 
 Plugging it back to the loss function, we get
-
-![](https://cdn-images-1.medium.com/max/800/1*QgPYkdcmTz1Q7SNPsOOlWQ.png)
+<p align="center">
+<img src='https://cdn-images-1.medium.com/max/800/1*QgPYkdcmTz1Q7SNPsOOlWQ.png'>
+</p>
 
 According to Chen, this is the structure score for a tree. The smaller the score
 is, the better the structure is. Thus, for each split to make, the proxy gain is
 defined as
+<p align="center">
+<img src='https://cdn-images-1.medium.com/max/800/1*vCRDHfATnfhsJXwN8ZX89w.png'>
+</p>
 
 Well, all deductions above didn’t take regularization into consideration. Note
 that XGBoost provides variety of regularization to improve generalization
 performance. Taking regularization into consideration, we can rewrite the loss
 function as
+<p align="center">
+<img src='https://cdn-images-1.medium.com/max/800/1*ri73yWvUMiaFW5-hDnFu1A.png'>
+</p>
 
 where **γ** is the penalization term on the number of terminal nodes, **α** and
 **λ** are for **L1** and **L2** regularization respectively. The optimal weight
 for each region **j** is calculated as:
+<p align="center">
+<img src='https://cdn-images-1.medium.com/max/800/1*pgAVG1tCOZrDbO5_3NDn0Q.png'>
+</p>
 
 The gain of each split is defined correspondingly:
+<p align="center">
+<img src='https://cdn-images-1.medium.com/max/800/1*J_VT3VcoKLL-yFRV9eBgAg.png'>
+</p>
 
-### Walk through XGBoost source code
+## Walk through XGBoost source code
 
 For better understanding, we are going to walk through the source code of
 [XGBoost](https://github.com/dmlc/xgboost/tree/master/src). For simplification,
 we will only focus on binary classification and the most important code
 snippets.
 
-**Update one boost round**
+### Update one boost round
 ```cpp
 void UpdateOneIter(int iter, DMatrix* train) override {
   this->LazyInitDMatrix(train);
@@ -77,7 +98,7 @@ void UpdateOneIter(int iter, DMatrix* train) override {
 }
 ```
 
-**Get gradient information for each instance**
+### Get gradient information for each instance
 ```cpp
 void GetGradient(const std::vector<bst_float> &preds,
                  const MetaInfo &info,
@@ -95,7 +116,7 @@ void GetGradient(const std::vector<bst_float> &preds,
 }
 ```
 
-**Loss function for binary classification task**
+### Loss function for binary classification task
 ```cpp
 XGBOOST_REGISTER_OBJECTIVE(LogisticClassification, "binary:logistic")
 .describe("Logistic regression for binary classification task.")
@@ -119,7 +140,7 @@ struct LogisticClassification : public LogisticRegression {
 };
 ```
 
-**DoBoost with updaters**
+### DoBoost with updaters
 ```cpp
 void DoBoost(DMatrix* p_fmat, std::vector<bst_gpair>* in_gpair,
              ObjFunction* obj) override {
@@ -161,7 +182,7 @@ inline void BoostNewTrees(const std::vector<bst_gpair> &gpair, DMatrix *p_fmat,
 }
 ```
 
-**Updater initialization**
+### Updater initialization
 ```cpp
 // initialize updater before using them
 inline void InitUpdater() {
@@ -242,7 +263,7 @@ inline bool need_prune(double loss_chg, int depth) const {
 ```
 Calculations for several important statistics are listed as follow.
 
-**Loss change for each split**
+### Loss change for each split
 ```cpp
 loss_chg = static_cast<bst_float>(constraints_[nid].CalcSplitGain(param, fid, e.stats, c) - snode[nid].root_gain);
 snode[nid].root_gain = static_cast<float>(constraints_[nid].CalcGain(param, snode[nid].stats));
@@ -253,7 +274,7 @@ inline double CalcSplitGain(const TrainParam &param, bst_uint split_index,
 }
 ```
 
-**Gain calculation for each tree node**
+### Gain calculation for each tree node
 ```cpp
 template <typename TrainingParams, typename T>
 XGB_DEVICE inline T CalcGain(const TrainingParams &p, T sum_grad, T sum_hess) {
@@ -278,7 +299,7 @@ XGB_DEVICE inline T CalcGain(const TrainingParams &p, T sum_grad, T sum_hess) {
 }
 ```
 
-**Weight calculation for each tree node**
+### Weight calculation for each tree node
 ```cpp
 // calculate weight given the statistics
 template <typename TrainingParams, typename T>
@@ -340,7 +361,7 @@ inline void Refresh(const TStats *gstats,
 }
 ```
 
-### Compare GBM and XGBoost
+## Compare GBM and XGBoost
 
 **GBM has broader application.** At each iteration, both GBM and XGBoost need to
 calculate gradient at current estimate. XGBoost also needs to calculate hessian,
@@ -351,8 +372,9 @@ applications.
 **XGBoost is faster.** Comparing the weights calculated by GBM and XGBoost, for
 GBM, the weight is simply the average value of the gradients, while for XGBoost,
 it is the sum of gradients scaled by the sum of hessians.
-
-![](https://cdn-images-1.medium.com/max/800/1*QPZl-djU1xI8tuW8up9Pew.png)
+<p align="center">
+<img src='https://cdn-images-1.medium.com/max/800/1*QPZl-djU1xI8tuW8up9Pew.png'>
+</p>
 
 For XGBoost, the weight is also known as the [Newton
 “step”](https://en.wikipedia.org/wiki/Newton's_method_in_optimization), which
@@ -362,8 +384,9 @@ This might be the reason why XGBoost is always much faster than GBM.
 **XGBoost provides more regularization options**, including L1(**α**) and
 L2(**λ**) regularization as well as penalization on the number of leaf
 nodes(**γ**).
-
-![](https://cdn-images-1.medium.com/max/800/1*hdtQ3c_6LhTw1Kal5Gi9Uw.png)
+<p align="center">
+<img src='https://cdn-images-1.medium.com/max/800/1*hdtQ3c_6LhTw1Kal5Gi9Uw.png'>
+</p>
 
 However, in terms of GBM in sklearn package, various useful regularization
 strategies are also provided. In version 0.19, parameter
