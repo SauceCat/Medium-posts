@@ -1,2 +1,2 @@
-# Medium-Posts
-My posts on Medium.
+# Medium Posts
+Collect all my posts on Medium in this repo.
