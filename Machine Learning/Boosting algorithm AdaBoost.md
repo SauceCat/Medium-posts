@@ -26,13 +26,13 @@ final equation for classification can be represented as
 
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*B2987FKIw3QL2ClYR_OeuQ.jpeg'></p>
 
-where f_m stands for the m_th weak classifier and theta_m is the corresponding
-weight. It is exactly the weighted combination of M weak classifiers. The whole
+where **f_m** stands for the **m_th** weak classifier and **theta_m** is the corresponding
+weight. It is exactly the weighted combination of **M** weak classifiers. The whole
 procedure of the AdaBoost algorithm can be summarized as follow.
 
 ### AdaBoost algorithm
 
-Given a data set containing n points, where
+Given a data set containing **n** points, where
 
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*2fp-O3KfXqrdYEGU_RjY0w.jpeg'></p>
 
@@ -49,7 +49,7 @@ weighted classification error:
 
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*C8-yNia8Oh44X-t0UxUCUA.jpeg'></p>
 
-(2) Calculate the weight for the m_th weak classifier:
+(2) Calculate the weight for the **m_th** weak classifier:
 
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*jFpUGuxpGZuzpG6FlDAASw.jpeg'></p>
 
@@ -67,7 +67,7 @@ prediction.*
 
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*mqLcX8yookiPVZoAe6iwqA.jpeg'></p>
 
-where Z_m is a normalization factor that ensures the sum of all instance weights
+where **Z_m** is a normalization factor that ensures the sum of all instance weights
 is equal to 1.
 
 *If a misclassified case is from a positive weighted classifier, the “exp” term
@@ -77,7 +77,7 @@ an iteration. The same logic applies to the negative weighted classifiers. The
 only difference is that the original correct classifications would become
 misclassifications after flipping the sign.*
 
-After M iteration we can get the final prediction by summing up the weighted
+After **M** iteration we can get the final prediction by summing up the weighted
 prediction of each classifier.
 
 ## AdaBoost as a Forward Stagewise Additive Model
@@ -98,41 +98,40 @@ It is minimized at
 
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*MqKgtWPJdX0VLuU5GO-TNw.jpeg'></p>
 
-Since for AdaBoost, y can only be -1 or 1, the loss function can be rewritten as
+Since for AdaBoost, **y** can only be -1 or 1, the loss function can be rewritten as
 
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*wJ4oTBoHtct5ic0pHKMnfA.jpeg'></p>
 
-Continue to solve for F(x), we get
+Continue to solve for **F(x)**, we get
 
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*YrJRjDF8W5z06YltBJWHPw.jpeg'></p>
 
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*2FdLn5qyQQBwcUSdJlPgww.jpeg'></p>
 
-We can further derive the normal logistic model from the optimal solution of
-F(x):
+We can further derive the normal logistic model from the optimal solution of **F(x)**:
 
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*tW70xptkSSh7f7kb23-Faw.jpeg'></p>
 
 It is almost identical to the logistic regression model despite of a factor 2.
 
-Suppose we have a current estimate of F(x) and try to seek an improved estimate
-F(x)+cf(x). For fixed c and x, we can expand L(y, F(x)+cf(x)) to second order
-about f(x)=0,
+Suppose we have a current estimate of **F(x)** and try to seek an improved estimate
+**F(x)+cf(x)**. For fixed **c** and **x**, we can expand **L(y, F(x)+cf(x))** to second order
+about **f(x)=0**,
 
 Thus,
 
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*08YHFqFZW-JuTqOpbDLBRA.jpeg'></p>
 
-where E_w(.|x) indicates a weighted conditional expectation and the weight for
+where **E_w(.|x)** indicates a weighted conditional expectation and the weight for
 each data point is calculated as
 
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*aNN9b_CNa2GfQfrKfrpvog.jpeg'></p>
 
-If c > 0, minimizing the weighted conditional expectation is equal to maximizing
+If **c > 0**, minimizing the weighted conditional expectation is equal to maximizing
 
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*XnbrviYa0W3yvORj2N6z5w.jpeg'></p>
 
-Since y can only be 1 or -1, the weighted expectation can be rewritten as
+Since **y** can only be 1 or -1, the weighted expectation can be rewritten as
 
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*wuDY2LwDvM_ewk_I7ldDsw.jpeg'></p>
 
@@ -140,12 +139,11 @@ The optimal solution comes as
 
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*IU_ynTQMpTz_ZCIQvg_AnQ.jpeg'></p>
 
-After determining f(x), the weight c can be calculated by directly minimizing
-L(y, F(x)+cf(x)):
+After determining **f(x)**, the weight **c** can be calculated by directly minimizing **L(y, F(x)+cf(x))**:
 
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*a3xUJLSTv8FWwGEgE8xM8A.jpeg'></p>
 
-Solving for c, we get
+Solving for **c**, we get
 
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*oU1Qwkp2ACByWQGVg38IWA.jpeg'></p>
 
@@ -157,7 +155,7 @@ Let epsilon equals to the weighted sum of misclassified cases, then
 
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*ol_jhn68ALTYAGTsTOrkAg.jpeg'></p>
 
-Note that c can be negative if the weak learner does worse than random guess
+Note that **c** can be negative if the weak learner does worse than random guess
 (50%), in which case it automatically reverses the polarity.
 
 In terms of instance weights, after the improved addition, the weight for a
@@ -178,7 +176,7 @@ Compared with those used in AdaBoost algorithm,
 we can see they are in identical form. Therefore, it is reasonable to interpret
 AdaBoost as a forward stagewise additive model with exponential loss function,
 which iteratively fits a weak classifier to improve the current estimate at each
-iteration m:
+iteration **m**:
 
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*iebd6Q_Lda4yEtPTnj6u7Q.jpeg'></p>
 
