@@ -160,30 +160,155 @@ For simplification, we will only focus on binary classification and the most
 important code snippets.
 
 #### class GradientBoostingClassifier
+```python
+class GradientBoostingClassifier(BaseGradientBoosting, ClassifierMixin):
+    _SUPPORTED_LOSS = ('deviance', 'exponential')
 
-The default criterion for GBM is , a modified kind of  specially for boosting
-algorithms. However, in our case, let’s just stick to the simpliest . In terms
-of loss function,  is default for binary classification problem, while  is
-specially for AdaBoost.
+    def __init__(self, loss='deviance', learning_rate=0.1, n_estimators=100,
+                 subsample=1.0, criterion='friedman_mse', min_samples_split=2,
+                 min_samples_leaf=1, min_weight_fraction_leaf=0.,
+                 max_depth=3, min_impurity_split=1e-7, init=None,
+                 random_state=None, max_features=None, verbose=0,
+                 max_leaf_nodes=None, warm_start=False,
+                 presort='auto'):
+```
+
+The default criterion for GBM is `friedman_mse`, a modified kind of `mse` specially for boosting algorithms. However, in our case, let’s just stick to the simpliest `mse`. In terms of loss function, `deviance` is default for binary classification problem, while `exponential` is specially for AdaBoost.
 
 #### fit function inherited from BaseGradientBoosting
-
-The fit function is inherited from . Firstly, the learning process is
-initialized by , where  as well as  is assigned.
+```python
+def fit(self, X, y, sample_weight=None, monitor=None):
+    if not self._is_initialized():
+        # init state
+        self._init_state()
+        # fit initial model - FIXME make sample_weight optional
+        self.init_.fit(X, y, sample_weight)
+        # init predictions
+        y_pred = self.init_.predict(X)
+        begin_at_stage = 0
+    # fit the boosting stages
+    n_stages = self._fit_stages(X, y, y_pred, sample_weight, random_state, begin_at_stage, monitor, X_idx_sorted)
+return self
+```
+The fit function is inherited from `class BaseGradientBoosting`. Firstly, the learning process is initialized by `self._init_state()`, where loss class as well as `init_estimator` is assigned.
 
 #### learning process initialization
+```python
+def _init_state(self):
+    if self.init is None:
+        self.init_ = self.loss_.init_estimator()
+    self.estimators_ = np.empty((self.n_estimators, self.loss_.K), dtype=np.object)
+    self.train_score_ = np.zeros((self.n_estimators,), dtype=np.float64)
+    
+# determine the loss function
+def _check_params(self):
+    if self.loss == 'deviance':
+        # our loss class is BinomialDeviance
+        loss_class = (MultinomialDeviance if len(self.classes_) > 2 else BinomialDeviance)
 
-The initial prediction is generated through  and , where  is assigned as .
+    if self.loss in ('huber', 'quantile'):
+        self.loss_ = loss_class(self.n_classes_, self.alpha)
+    else:
+        self.loss_ = loss_class(self.n_classes_)
+
+# find the init_estimator for BinomialDeviance loss class
+class BinomialDeviance(ClassificationLossFunction):
+    def init_estimator(self):
+        # the init_estimator is LogOddsEstimator
+        return LogOddsEstimator()
+```
+The initial prediction is generated through `self.init_.fit()` and `self.init_.predict()`, where `init_estimator` is assigned as `LogOddsEstimator`.
 
 #### initial prediction
+```python
+# init_estimator
+class LogOddsEstimator(BaseEstimator):
+    scale = 1.0
+    def fit(self, X, y, sample_weight=None):
+        # pre-cond: pos, neg are encoded as 1, 0
+        if sample_weight is None:
+            pos = np.sum(y)
+            neg = y.shape[0] - pos
+        else:
+            pos = np.sum(sample_weight * y)
+            neg = np.sum(sample_weight * (1 - y))
+            
+        self.prior = self.scale * np.log(pos / neg)
 
-After initialization,  is started to fit the boosting stages.
+    def predict(self, X):
+        check_is_fitted(self, 'prior')
+        y = np.empty((X.shape[0], 1), dtype=np.float64)
+        # fill y with initial prediction
+        y.fill(self.prior)
+        return y
+```
+After initialization, `self._fit_stages` is started to fit the boosting stages.
+```python
+def _fit_stages(self, X, y, y_pred, sample_weight, random_state, begin_at_stage=0, monitor=None, X_idx_sorted=None):
+    loss_ = self.loss_
+    # perform boosting iterations
+    i = begin_at_stage
+    
+    for i in range(begin_at_stage, self.n_estimators):
+        # fit next stage of trees
+        y_pred = self._fit_stage(i, X, y, y_pred, sample_weight, sample_mask, random_state, X_idx_sorted, X_csc, X_csr)
+        # track deviance (= loss)
+        self.train_score_[i] = loss_(y, y_pred, sample_weight)
+        
+    return i + 1
+```
+For each stage, a `DecisionTreeRegressor` is fitted to predict the residual (negative gradient).
+```python
+def _fit_stage(self, i, X, y, y_pred, sample_weight, sample_mask, random_state, X_idx_sorted, X_csc=None, X_csr=None):
+    loss = self.loss_
+    original_y = y
+    
+    # in our case, loss.K equals to 1
+    for k in range(loss.K):
+        if loss.is_multi_class:
+            y = np.array(original_y == k, dtype=np.float64)
+        # get the negative gradient 
+        residual = loss.negative_gradient(y, y_pred, k=k, sample_weight=sample_weight)
 
-For each stage, a is fitted to predict the residual (negative gradient).
+        # induce regression tree on residuals
+        tree = DecisionTreeRegressor(criterion=self.criterion, splitter='best', max_depth=self.max_depth, 
+                                     min_samples_split=self.min_samples_split, min_samples_leaf=self.min_samples_leaf,
+                                     min_weight_fraction_leaf=self.min_weight_fraction_leaf, max_features=self.max_features,
+                                     max_leaf_nodes=self.max_leaf_nodes, random_state=random_state, presort=self.presort)
+        
+        tree.fit(X, residual, sample_weight=sample_weight, check_input=False, X_idx_sorted=X_idx_sorted)
+        # update the terminal regions = line search
+        loss.update_terminal_regions(tree.tree_, X, y, residual, y_pred, sample_weight, sample_mask, self.learning_rate, k=k)
+        # add tree to ensemble
+        self.estimators_[i, k] = tree
 
-In details,  and  is defined as follow.
+    return y_pred
+```
+In details, `loss.negative_gradient()` and `loss.update_terminal_regions` is defined as follow.
+```python
+class BinomialDeviance(ClassificationLossFunction):
+    def negative_gradient(self, y, pred, **kargs):
+        return y - expit(pred.ravel())
 
-Remember we have mentioned the term , which is defined as:
+    def _update_terminal_region(self, tree, terminal_regions, leaf, X, y, residual, pred, sample_weight):
+        """Make a single Newton-Raphson step. Our node estimate is given by:
+            sum(w * (y - prob)) / sum(w * prob * (1 - prob))
+        we take advantage that: y - prob = residual
+        """
+        terminal_region = np.where(terminal_regions == leaf)[0]
+        residual = residual.take(terminal_region, axis=0)
+        y = y.take(terminal_region, axis=0)
+        sample_weight = sample_weight.take(terminal_region, axis=0)
+
+        numerator = np.sum(sample_weight * residual)
+        denominator = np.sum(sample_weight * (y - residual) * (1 - y + residual))
+
+        if denominator == 0.0:
+            tree.value[leaf, 0, 0] = 0.0
+        else:
+            tree.value[leaf, 0, 0] = numerator / denominator
+```
+Remember we have mentioned the term `proxy gain`, which is defined as:
 
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*fjAhxKQn1udxCHy5HcAaOw.png'></p>
 
@@ -192,21 +317,152 @@ In practice, this trick can be further simplified as:
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*uUcXQO6cUP1rK6dHBp0hqA.png'></p>
 
 It is utilized during the node split procedure of the regression tree.
+```python
+cdef class MSE(RegressionCriterion):
+    cdef double proxy_impurity_improvement(self) nogil:
+        """Compute a proxy of the impurity reduction
+        This method is used to speed up the search for the best split.
+        It is a proxy quantity such that the split that maximizes this value
+        also maximizes the impurity improvement. It neglects all constant terms
+        of the impurity decrease for a given split.
+        The absolute impurity improvement is only computed by the
+        impurity_improvement method once the best split has been found.
+        """
+        # sum_left is the sum gradient from left node
+        cdef double* sum_left = self.sum_left
+        # sum_right is the sum gradient from right node
+        cdef double* sum_right = self.sum_right
+
+        cdef SIZE_t k
+        cdef double proxy_impurity_left = 0.0
+        cdef double proxy_impurity_right = 0.0
+
+        for k in range(self.n_outputs):
+            proxy_impurity_left += sum_left[k] * sum_left[k]
+            proxy_impurity_right += sum_right[k] * sum_right[k]
+
+        return (proxy_impurity_left / self.weighted_n_left +
+                proxy_impurity_right / self.weighted_n_right)
+```
 
 The true gain of split is only calcualted for the best split when it is found.
 Note that the impurity improvement is scaled by the fraction of samples in that
 node.
+```python
+cdef class Criterion:
+    cdef double impurity_improvement(self, double impurity) nogil:
+        """Compute the improvement in impurity
+        This method computes the improvement in impurity when a split occurs.
+        The weighted impurity improvement equation is the following:
+            N_t / N * (impurity - N_t_R / N_t * right_impurity
+                                - N_t_L / N_t * left_impurity)
+        where N is the total number of samples, N_t is the number of samples
+        at the current node, N_t_L is the number of samples in the left child,
+        and N_t_R is the number of samples in the right child,
+        Parameters
+        ----------
+        impurity : double
+            The initial impurity of the node before the split
+        Return
+        ------
+        double : improvement in impurity after the split occurs
+        """
+
+        cdef double impurity_left
+        cdef double impurity_right
+
+        self.children_impurity(&impurity_left, &impurity_right)
+
+        return ((self.weighted_n_node_samples / self.weighted_n_samples) *
+                (impurity - (self.weighted_n_right / 
+                             self.weighted_n_node_samples * impurity_right)
+                          - (self.weighted_n_left / 
+                             self.weighted_n_node_samples * impurity_left)))
+```
 
 The true absolute node impurity is calculated as:
 
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*QKIzHOubfTHePKSc165tCA.png'></p>
 
 where m is the number of samples at that node.
+```python
+cdef class MSE(RegressionCriterion):
+    """Mean squared error impurity criterion.
+        MSE = var_left + var_right
+    """
 
-For prediction, probabilities are generated by . Initial prediction is given by
-. At each stage, scores are updated by . Finally, the scores are normalized as
-probabilities.
+    cdef double node_impurity(self) nogil:
+        """Evaluate the impurity of the current node, i.e. the impurity of
+           samples[start:end]."""
 
-Where  is the implementation of logistic sigmoid function.
+        cdef double* sum_total = self.sum_total
+        cdef double impurity
+        cdef SIZE_t k
+
+        impurity = self.sq_sum_total / self.weighted_n_node_samples
+        for k in range(self.n_outputs):
+            impurity -= (sum_total[k] / self.weighted_n_node_samples)**2.0
+
+        return impurity / self.n_outputs
+```
+
+For prediction, probabilities are generated by `self.predict_proba()`. Initial prediction is given by `self._init_decision_function()`. At each stage, scores are updated by `predict_stages`. Finally, the scores are normalized as probabilities.
+```python
+class GradientBoostingClassifier(BaseGradientBoosting, ClassifierMixin):
+    def predict_proba(self, X):
+        score = self.decision_function(X)
+        try:
+            return self.loss_._score_to_proba(score)
+        except NotFittedError:
+            raise
+        except AttributeError:
+            raise AttributeError('loss=%r does not support predict_proba' % self.loss)
+            
+    # self.decision_function
+    def decision_function(self, X):
+        score = self._decision_function(X)
+        return score
+      
+    # self._decision_function
+    # inherited from BaseGradientBoosting
+    def _decision_function(self, X):
+        score = self._init_decision_function(X)
+        predict_stages(self.estimators_, X, self.learning_rate, score)
+        return score
+    
+    # self._init_decision_function
+    # inherited from BaseGradientBoosting
+    def _init_decision_function(self, X):
+        self._check_initialized()
+        # first get the initial prediction
+        score = self.init_.predict(X).astype(np.float64)
+        return score
+```
+```python
+class BinomialDeviance(ClassificationLossFunction):
+    def _score_to_proba(self, score):
+        proba = np.ones((score.shape[0], 2), dtype=np.float64)
+        proba[:, 1] = expit(score.ravel())
+        proba[:, 0] -= proba[:, 1]
+        return proba
+```
+Where `expit` is the implementation of logistic sigmoid function.
+```python
+def expit(x, out=None):
+    """Logistic sigmoid function, ``1 / (1 + exp(-x))``.
+    See sklearn.utils.extmath.log_logistic for the log of this function.
+    """
+    if out is None:
+        out = np.empty(np.atleast_1d(x).shape, dtype=np.float64)
+    out[:] = x
+
+    # 1 / (1 + exp(-x)) = (1 + tanh(x / 2)) / 2
+    # This way of computing the logistic is both fast and stable.
+    out *= .5
+    np.tanh(out, out)
+    out += 1
+    out *= .5
+    return out.reshape(np.shape(x))
+```
 
 Really feel so good to walk through the code! 😻💯
