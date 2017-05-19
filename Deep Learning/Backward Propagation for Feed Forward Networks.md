@@ -177,7 +177,9 @@ here.
 
 ### Forward Propagation
 #### input layer to hidden layer
-<p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*ZQ31NUy8Xwu0JDFz2XgCtw.png'></p>
+<p align='center'>
+<img src='https://cdn-images-1.medium.com/max/800/1*ZQ31NUy8Xwu0JDFz2XgCtw.png'>
+</p>
 
 #### hidden layer to output layer
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*az86P-EybXm77Y0I31N8-Q.png'></p>
