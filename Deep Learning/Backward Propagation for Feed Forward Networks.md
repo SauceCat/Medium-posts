@@ -176,29 +176,36 @@ To summarize, let’s put forward propagation and backward propagation together
 here.
 
 ### Forward Propagation
-
+#### input layer to hidden layer
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*ZQ31NUy8Xwu0JDFz2XgCtw.png'></p>
 
+#### hidden layer to output layer
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*az86P-EybXm77Y0I31N8-Q.png'></p>
 
 ### Error function
-
+#### error for a batch of training samples
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*l6_9tqMqLWbaEXaNY9L9cg.png'></p>
 
 ### Backward Propagation
-
+#### error to output net layer
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*sQDBv9irY9nZWwHx3Qc2tg.png'></p>
 
+#### error to hidden_to_output weights
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*AqFaMNqv-HZsIHtkEeCfbQ.png'></p>
 
+#### error to output layer bias
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*7a76zTt-6gT8it4ABdpbMA.png'></p>
 
+#### error to hidden net layer
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*dLSomzy__dZZeFTubXoI-g.png'></p>
 
+#### error to input_to_hidden weights
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*zDt1O_pV8hm-_SqytXK6Lw.png'></p>
 
+#### error to hidden layer bias
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*DK43oidanhbt_Z9jzIQgfw.png'></p>
 
+#### error to word embedding matrix
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*d0N1qEpJT9cwYWaQMNp5zw.png'></p>
 
 ### Learning Update
