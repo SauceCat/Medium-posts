@@ -18,6 +18,7 @@ Model](http://www.jmlr.org/papers/volume3/bengio03a/bengio03a.pdf)) in 2003. The
 most notable difference is that Bengio’s net contains more than 15,000 output
 units while our simple net only has 250.
 
+#### Bengio’s net in 2003
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*rPB6sk3hn4qPmlgmkVFzpQ.png'></p>
 
 Mathematical representation for this predictor is as follow:
@@ -37,24 +38,19 @@ lecture, is to learn in the serial architecture using the following network
 structure.
 
 #### Learning in the serial architecture
+<p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*HDxsbWyFAaWnUEsra0ikpQ.png'></p>
 
-For each context, one can first compute the logit score for each candidate next
-word and then normalize all the logits using softmax function to get the
-probabilities.
+For each context, one can first compute the logit score for each candidate next word and then normalize all the logits using softmax function to get the probabilities.
 
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*wEPnRocDo5pGX1tUQ6FYTQ.png'></p>
 
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*6iO2yYXrt8xV-WirLNuwEg.png'></p>
 
-If there are only limit number of candidate words, one can save even more time.
-For example, the candidates can be limited in the set of possible words
-suggested by the trigram model.
+If there are only limit number of candidate words, one can save even more time. For example, the candidates can be limited in the set of possible words suggested by the trigram model.
 
 ## Hierarchical Probabilistic Neural Network
 
-This part is based on Morin and Bengio’s paper [Hierarchical Probabilistic
-Neural Network Language
-Model](http://www.iro.umontreal.ca/~lisa/pointeurs/hierarchical-nnlm-aistats05.pdf)*.*
+This part is based on Morin and Bengio’s paper *[Hierarchical Probabilistic Neural Network Language Model](http://www.iro.umontreal.ca/~lisa/pointeurs/hierarchical-nnlm-aistats05.pdf)*.
 
 This paper proposes a much faster variant of the original HPLM. The basic idea
 is to construct a hierarchical description of a word by arranging all the words
@@ -65,22 +61,23 @@ cluster of words).
 
 ### Hierarchical decomposition
 
-In formal representation, instead of computing **P(Y|X) **directly, we can
-define a clustering partition for **Y **with a deterministic function **c(.)**
-mapping **Y** to cluster **C**, then **P(Y|X) **can be decomposed as:
+In formal representation, instead of computing **P(Y|X)** directly, we can
+define a clustering partition for **Y** with a deterministic function **c(.)**
+mapping **Y** to cluster **C**, then **P(Y|X)** can be decomposed as:
 
 <p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*xWj6o_XW7swF_DTYgZTG0g.png'></p>
 
 The proposed binary tree is actually a binary hierarchical clustering of words,
 which can be interpreted as a series of binary stochastic decisions associated
-with nodes. Each word can be represented by a bit vector (b1(v), b2(v),…,bm(v)),
-where m is the number of decisions needed to take to reach the target word. For
+with nodes. Each word can be represented by a bit vector **(b1(v), b2(v),…,bm(v))**,
+where **m** is the number of decisions needed to take to reach the target word. For
 example, according to the tree structure below, the word “cat” can be
 represented as (1, 0). (1 means to take the left node) And we can see that words
 “dog” and “cat” belong to the same second-level word cluster, while “tree” and
 “flower” belong to the other.
 
 #### Simple binary hierarchical clustering of words
+<p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*U_6aw-XOezKgamj231mK4Q.png'></p>
 
 Then, conditional probability for a next word **v** can be represented as
 sequential prediction down a tree path.
@@ -107,6 +104,7 @@ context words and the feature vector of the current tree node). This can be
 represented by a model similar to NPLM but with two kinds of input.
 
 #### predictor at each tree node
+<p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*8p1z3M2vyf5sFV2SQtp1ug.png'></p>
 
 The predict function can be written as:
 
@@ -143,17 +141,20 @@ the few nodes associated with several parents and assign each of the few words
 associated with multiple leaves with only one leaf.
 
 #### noun taxonomy graph from WordNet
+<p align='center'><img src='https://cdn-images-1.medium.com/max/800/0*znQMF_VdRS6KjRH2.'></p>
 
 *(The graph above is from kleem’s
 *[GitHubGist](https://gist.github.com/kleem/6ab92f48ef961da271ab)*, really
 informative visualization!)*
 
 #### fragment of WordNet taxonomy graph
+<p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*u90KLC0Wk7YcHsAeirYP3Q.png'></p>
 
 *(This example is based on the post
 *[here](http://www.clips.ua.ac.be/pages/pattern-search)*. In this example, words
 “tiger” and “lion” share the same parent because they are both “big cat”. Words
 “dog”, “wolf” and “fox” are grouped together since they are all “canine”.)*
+<p align='center'><img src='https://cdn-images-1.medium.com/max/600/1*O_Jy1LjQmM4TQjZgy9sbPw.png'></p>
 
 The last step is to turn the modified tree into a binary one. The proposed
 method is to perform a data-driven binary hierarchical clustering of the
@@ -216,7 +217,8 @@ the predicted feature vector. Thus, the LBL model can save a lot of time by
 calculating the hidden activities once per prediction (one prediction contains a
 sequence of decisions).
 
-#### log-bilinear mode
+#### log-bilinear model
+<p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*8_5qDCaQGk-AZhiDHEy0Pw.png'></p>
 
 ### The hierarchical log-bilinear model
 
@@ -283,6 +285,7 @@ predicted feature vectors w.r.t. the distribution of all possible contexts. Then
 the word is finally represented by this expected vector.
 
 #### Generate the expected predicted feature vector
+<p align='center'><img src='https://cdn-images-1.medium.com/max/1000/1*-ry1UxybNNHfBDi8C023uQ.png'></p>
 
 With the learned representation for each word, at each step, simple
 two-component Gaussian mixture clustering algorithm is implemented by runing the
@@ -297,6 +300,7 @@ form a big tree. Then the model would have flexibility to choose between
 multiple possible clusterings.
 
 #### Big tree from 4 different runs
+<p align='center'><img src='https://cdn-images-1.medium.com/max/800/1*Wd-_bF58ZGjtaJhiOW9quw.png'></p>
 
 Another thing to consider is the split rules (how to split the two subsets). The
 goal is to generate a tree that is both well-balanced and well-supported by the
